@@ -1,0 +1,150 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: pupur
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mysql
+  namespace: pupur
+spec:
+  ports:
+    - port: 3306
+      protocol: TCP
+      name: mysql
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: mysql
+  namespace: pupur
+subsets:
+  - addresses:
+    - ip: 172.62.11.82
+    - ip: 195.201.58.86
+    ports:
+    - protocol: TCP
+      port: 3306
+      name: mysql
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: gluster
+  namespace: pupur
+spec:
+  ports:
+    - port: 1
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: gluster
+  namespace: pupur
+subsets:
+  - addresses:
+    - ip: 172.62.11.82
+    - ip: 195.201.58.86
+    ports:
+    - port: 1
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: db-config
+  namespace: pupur
+data:
+  host: mysql
+  dbName: pupur
+  user: pupur
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: pupur
+  namespace: pupur
+  labels:
+    app: pupur
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pupur
+  template:
+    metadata:
+      labels:
+        app: pupur
+    spec:
+      volumes:
+        - glusterfs:
+            endpoints: gluster
+            path: kubes-pv
+          name: gluster
+      containers:
+        - name: pupur
+          image: evilben/pupur_server@sha256:32c156da6689fdc7efe71ca3f911455f7a2efd694d1e8f1662cd206775a23be7
+          imagePullPolicy: Always
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-pass
+                  key: pass
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: dbName
+          volumeMounts:
+            - name: gluster
+              mountPath: /go/public
+              subPath: pupur/public
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pupur
+  namespace: pupur
+spec:
+  selector:
+    app: pupur
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: pupur
+  namespace: pupur
+  annotations:
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+    - secretName: pupur-tls
+      hosts:
+      - pupur.misell.cymru
+  rules:
+    - host: pupur.misell.cymru
+      http:
+        paths:
+          - path: "/"
+            backend:
+              serviceName: pupur
+              servicePort: 8080

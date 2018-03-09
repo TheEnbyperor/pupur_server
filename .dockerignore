@@ -1,0 +1,5 @@
+Dockerfile
+deployment.yaml
+test.db
+pupur_server
+media/*
