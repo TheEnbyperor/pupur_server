@@ -135,6 +135,7 @@ metadata:
   namespace: pupur
   annotations:
     kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
 spec:
   tls:
     - secretName: pupur-tls
