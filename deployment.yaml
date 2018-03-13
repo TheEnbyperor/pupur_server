@@ -21,12 +21,24 @@ metadata:
   namespace: pupur
 subsets:
   - addresses:
-    - ip: 172.62.11.82
     - ip: 195.201.58.86
     ports:
     - protocol: TCP
       port: 3306
       name: mysql
+  - addresses:
+    - ip: 88.99.122.54
+    ports:
+    - protocol: TCP
+      port: 3306
+      name: mysql
+  - addresses:
+    - ip: 138.201.93.184
+    ports:
+    - protocol: TCP
+      port: 3306
+      name: mysql
+
 ---
 kind: Service
 apiVersion: v1
@@ -44,8 +56,15 @@ metadata:
   namespace: pupur
 subsets:
   - addresses:
-    - ip: 172.62.11.82
     - ip: 195.201.58.86
+    ports:
+    - port: 1
+  - addresses:
+    - ip: 138.201.93.184
+    ports:
+    - port: 1
+  - addresses:
+    - ip: 88.99.122.54
     ports:
     - port: 1
 ---
@@ -67,7 +86,7 @@ metadata:
   labels:
     app: pupur
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: pupur
@@ -83,7 +102,7 @@ spec:
           name: gluster
       containers:
         - name: pupur
-          image: evilben/pupur_server@sha256:32c156da6689fdc7efe71ca3f911455f7a2efd694d1e8f1662cd206775a23be7
+          image: evilben/pupur_server@sha256:5210e2088b5d9e1ab26a12a2ab7f027fbfc872e756a56f6c655ac30a8f8b488d
           imagePullPolicy: Always
           env:
             - name: DB_HOST

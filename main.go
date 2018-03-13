@@ -366,11 +366,13 @@ func main() {
 		Auth:     AdminAuth{},
 	})
 
-	Admin.AddResource(&Recipe{})
+	Admin.AddResource(&media_library.MediaLibrary{})
+	recipe := Admin.AddResource(&Recipe{})
 	user := Admin.AddResource(&User{})
 	user.IndexAttrs("ID", "Login")
 	user.EditAttrs("Login", "Password")
-	user.Meta(&admin.Meta{Name: "Password",
+	user.Meta(&admin.Meta{
+		Name: "Password",
 		Type:   "password",
 		Valuer: func(interface{}, *qor.Context) interface{} { return "" },
 		Setter: func(record interface{}, metaValue *resource.MetaValue, context *qor.Context) {
@@ -381,6 +383,11 @@ func main() {
 				db.Save(user)
 			}
 		},
+	})
+
+	recipe.GetMeta("Steps").Resource.Meta(&admin.Meta{
+		Name: "Description",
+		Type: "text",
 	})
 
 	adminMux := http.NewServeMux()
